@@ -1,0 +1,40 @@
+# Terraform
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Terraform plans
+*.tfplan
+*.plan
+plan.out
+
+# Local variable files
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Terragrunt
+.terragrunt-cache/
+**/.terragrunt-cache/
+terragrunt-debug.tfvars.json
+
+# Local tooling
+.terraform-docs.yml
+.tflint.hcl
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
