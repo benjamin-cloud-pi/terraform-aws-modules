@@ -4,6 +4,18 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
 
   bucket = aws_s3_bucket.this.id
 
+  lifecycle {
+    precondition {
+      condition     = var.lifecycle_transition_to_ia_days < var.lifecycle_transition_to_glacier_days
+      error_message = "lifecycle_transition_to_ia_days must be lower than lifecycle_transition_to_glacier_days."
+    }
+
+    precondition {
+      condition     = var.lifecycle_expiration_days == null || var.lifecycle_transition_to_glacier_days < var.lifecycle_expiration_days
+      error_message = "lifecycle_expiration_days must be null or greater than lifecycle_transition_to_glacier_days."
+    }
+  }
+
   rule {
 
     abort_incomplete_multipart_upload {
@@ -27,8 +39,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
       storage_class = "GLACIER"
     }
 
-    expiration {
-      days = var.lifecycle_expiration_days
+    dynamic "expiration" {
+      for_each = var.lifecycle_expiration_days == null ? [] : [var.lifecycle_expiration_days]
+
+      content {
+        days = expiration.value
+      }
     }
   }
 }

@@ -3,6 +3,10 @@ resource "aws_s3_bucket" "this" {
   force_destroy = var.force_destroy
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Deny insecure traffic (HTTP and non-TLS)

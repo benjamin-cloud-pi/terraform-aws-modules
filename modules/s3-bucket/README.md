@@ -10,7 +10,7 @@ Este módulo forma parte de la biblioteca interna de módulos Terraform AWS, dis
 
 ✅ Creación de S3 bucket con configuración segura  
 ✅ Bloqueo de acceso público por defecto  
-✅ Cifrado de lado del servidor (AES-256)  
+✅ Cifrado de lado del servidor con AWS KMS  
 ✅ Control de versiones configurable  
 ✅ Políticas de ciclo de vida para optimización de costos  
 ✅ Controles de propiedad de objetos  
@@ -51,14 +51,14 @@ El nombre del bucket será: `example-dev-artifacts`
 | Variable | Tipo | Default | Descripción |
 |----------|------|---------|-------------|
 | `tags` | `map(string)` | `{}` | Tags adicionales para aplicar a los recursos. |
-| `force_destroy` | `bool` | `false` | Permitir a Terraform destruir el bucket aunque contenga objetos. |
+| `force_destroy` | `bool` | `false` | Permitir a Terraform destruir el bucket aunque contenga objetos. No reemplaza `prevent_destroy`. |
 | `versioning_enabled` | `bool` | `true` | Habilitar versionado de objetos en el bucket. |
 | `object_ownership` | `string` | `BucketOwnerEnforced` | Control de propiedad de objetos. Valores: `BucketOwnerEnforced`, `BucketOwnerPreferred`, `ObjectWriter` |
 | `enable_secure_transport` | `bool` | `true` | Forzar transporte seguro (HTTPS) para acceso al bucket. |
 | `enable_lifecycle` | `bool` | `true` | Habilitar política de ciclo de vida para optimización de costos. |
 | `lifecycle_transition_to_ia_days` | `number` | `30` | Días antes de transicionar a almacenamiento Infrequent Access. |
 | `lifecycle_transition_to_glacier_days` | `number` | `90` | Días antes de transicionar a almacenamiento Glacier. |
-| `lifecycle_expiration_days` | `number` | `365` | Días antes de expirar objetos. (0 = deshabilitar) |
+| `lifecycle_expiration_days` | `number` | `null` | Días antes de expirar objetos. `null` deshabilita expiración para evitar borrado de datos por defecto. |
 | `abor_incomplete_multipart_upload_days` | `number` | `7` | Días para cancelar cargas multiparte incompletas. |
 | `kms_key_id` | `string` | `null` | ARN o ID de clave KMS para cifrado. Si es null, usa la clave AWS administrada. |
 
@@ -80,7 +80,8 @@ El nombre del bucket será: `example-dev-artifacts`
 ### ✅ Implementado
 
 - **Acceso público bloqueado** por defecto en todos los buckets
-- **Cifrado de lado del servidor** con AES-256 habilitado
+- **Cifrado de lado del servidor** con AWS KMS habilitado
+- **Protección contra destrucción accidental** mediante `prevent_destroy`
 - **Transporte seguro** (HTTPS) forzado mediante política de bucket
 - **Versioning** de objetos habilitado por defecto
 - **Control de propiedad** de objetos para evitar problemas de propiedad
@@ -100,15 +101,23 @@ El módulo incluye políticas automáticas de ciclo de vida que:
 
 - Transicionan objetos no accedidos frecuentemente a **Infrequent Access** (IA) después de 30 días
 - Transicionan a **Glacier** después de 90 días para archivo a largo plazo
-- **Expiran objetos** después de 365 días
+- No expiran objetos por defecto. La expiración debe configurarse explícitamente con `lifecycle_expiration_days`.
 
 Esto reduce significativamente los costos de almacenamiento manteniendo los datos disponibles según sea necesario.
 
 ## 🔄 Ciclo de vida del bucket
 
 ```
-Creación → STANDARD (0-30 días) → STANDARD_IA (30-90 días) → GLACIER (90-365 días) → Expiración (365+ días)
+Creación → STANDARD (0-30 días) → STANDARD_IA (30-90 días) → GLACIER (90+ días)
 ```
+
+## ⚠️ Protección contra destrucción accidental
+
+El bucket incluye `prevent_destroy = true`. Esto hace que Terraform falle si un cambio intenta destruir o reemplazar el bucket, por ejemplo al cambiar `project`, `environment` o `name`.
+
+`force_destroy = false` solo evita destruir buckets que contienen objetos. Un bucket vacío todavía puede ser destruido si no existe `prevent_destroy`, por eso ambas protecciones cumplen roles diferentes.
+
+Para eliminar un bucket intencionalmente, primero se debe hacer una revisión explícita y remover temporalmente `prevent_destroy` en un cambio separado.
 
 ## 📋 Ejemplos
 
@@ -222,7 +231,7 @@ inputs = {
 | `aws_s3_bucket` | Bucket S3 principal |
 | `aws_s3_bucket_public_access_block` | Bloqueo de acceso público |
 | `aws_s3_bucket_ownership_controls` | Control de propiedad de objetos |
-| `aws_s3_bucket_server_side_encryption_configuration` | Cifrado de lado del servidor (AES-256) |
+| `aws_s3_bucket_server_side_encryption_configuration` | Cifrado de lado del servidor con AWS KMS |
 | `aws_s3_bucket_versioning` | Versionado de objetos |
 | `aws_s3_bucket_policy` | Política de transporte seguro (si está habilitada) |
 | `aws_s3_bucket_lifecycle_configuration` | Ciclo de vida (si está habilitada) |

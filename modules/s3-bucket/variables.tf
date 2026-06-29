@@ -80,18 +80,34 @@ variable "lifecycle_transition_to_ia_days" {
   description = "Number of days to wait before transitioning objects to Infrequent Access storage class. Defaults to 30."
   type        = number
   default     = 30
+
+  validation {
+    condition     = var.lifecycle_transition_to_ia_days >= 1
+    error_message = "lifecycle_transition_to_ia_days must be greater than or equal to 1."
+  }
 }
 
 variable "lifecycle_transition_to_glacier_days" {
   description = "Number of days to wait before transitioning objects to Glacier storage class. Defaults to 90."
   type        = number
   default     = 90
+
+  validation {
+    condition     = var.lifecycle_transition_to_glacier_days >= 1
+    error_message = "lifecycle_transition_to_glacier_days must be greater than or equal to 1."
+  }
 }
 
 variable "lifecycle_expiration_days" {
-  description = "Number of days to wait before expiring objects. Set to 0 to disable expiration. Defaults to 365."
+  description = "Number of days to wait before expiring objects. Set to null to disable expiration. Defaults to null for safer retention."
   type        = number
-  default     = 365
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.lifecycle_expiration_days == null || var.lifecycle_expiration_days >= 1
+    error_message = "lifecycle_expiration_days must be null or greater than or equal to 1."
+  }
 }
 
 variable "kms_key_id" {
